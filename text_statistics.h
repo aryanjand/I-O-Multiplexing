@@ -5,20 +5,20 @@
 
 #include "file.h"
 
-
 #define MAX_ASCII_CHAR 256
 
-typedef struct {
+typedef struct
+{
     unsigned long long word_count;
     unsigned long long character_count;
     unsigned long long character_frequency[256];
 } TextStatistics;
 
-typedef struct {
-    int socket_fd; // Client's socket file descriptor
-    TextStatistics stats; // Statistics for this client
+typedef struct
+{
+    int socket_fd;         // Client's socket file descriptor
+    TextStatistics *stats; // Statistics for this client
 } ClientData;
-
 
 // static void update_character_frequency(const char *word, uint8_t word_size, unsigned int *frequencyArray);
 // static void read_stats(FILE *file, int sockfd);
@@ -26,30 +26,34 @@ typedef struct {
 // static void print_stats(TextStatistics *stats);
 // static void handleError(const char *errorMessage, FILE *file, int sockfd, TextStatistics *stats, int exitProgram);
 
-static void print_stats(TextStatistics *stats) 
+static void print_stats(TextStatistics *stats)
 {
     printf("Word Count: %llu\n", stats->word_count);
     printf("Character Count: %llu\n", stats->character_count);
     printf("Character Frequency\n");
-    for (int i = 0; i < MAX_ASCII_CHAR; i++) {
+    for (int i = 0; i < MAX_ASCII_CHAR; i++)
+    {
         if (stats->character_frequency[i] != 0)
             printf("Character: %c Frequency: %llu\n", (char)i, stats->character_frequency[i]);
     }
 }
 
-static void handleError(const char* errorMessage, int sockfd, TextStatistics* stats, int exitProgram)  
+static void handleError(const char *errorMessage, int sockfd, TextStatistics *stats, int exitProgram)
 {
     perror(errorMessage);
 
-    if (stats) {
+    if (stats)
+    {
         free(stats);
     }
 
-    if (sockfd >= 0) {
+    if (sockfd >= 0)
+    {
         close(sockfd);
     }
 
-    if (exitProgram) {
+    if (exitProgram)
+    {
         return;
     }
 }
@@ -57,15 +61,18 @@ static void handleError(const char* errorMessage, int sockfd, TextStatistics* st
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
 
-static void update_character_frequency(const char *word, uint8_t word_size, unsigned int *frequencyArray) //[-Wunused-function] 
+static void update_character_frequency(const char *word, uint8_t word_size, unsigned int *frequencyArray) //[-Wunused-function]
 {
-    if (word == NULL || frequencyArray == NULL) {
+    if (word == NULL || frequencyArray == NULL)
+    {
         printf("Null pointer provided.\n");
         return;
     }
 
-    for (int i = 0; i < word_size; i++) {
-        if (word[i] == '\0') {
+    for (int i = 0; i < word_size; i++)
+    {
+        if (word[i] == '\0')
+        {
             printf("Early null terminator found at position %d.\n", i);
             break;
         }
@@ -81,19 +88,19 @@ static void read_stats(int sockfd) // [-Wunused-function]
     TextStatistics *stats = (TextStatistics *)calloc(1, sizeof(TextStatistics));
     size_t stats_len = sizeof(TextStatistics);
 
-    if (!stats) 
+    if (!stats)
         handleError((char *)"Failed to allocate memory for stats", sockfd, stats, 1);
 
     ssize_t read_bytes;
 
-    if ((read_bytes = read_fully(sockfd, &stats_len, sizeof(stats_len))) <= 0) 
+    if ((read_bytes = read_fully(sockfd, &stats_len, sizeof(stats_len))) <= 0)
         handleError("Failed to read stats length", sockfd, stats, 1);
 
     stats = realloc(stats, stats_len);
-    if (!stats) 
+    if (!stats)
         handleError("Failed to reallocate memory for stats", sockfd, NULL, 1);
 
-    if ((read_bytes = read_fully(sockfd, stats, stats_len)) <= 0) 
+    if ((read_bytes = read_fully(sockfd, stats, stats_len)) <= 0)
         handleError("Failed to read stats data", sockfd, stats, 1);
 
     printf("Bytes read %zu\n", read_bytes);

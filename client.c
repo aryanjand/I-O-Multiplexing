@@ -23,17 +23,15 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "text_statistics.h"
-
-static void           parse_arguments(int argc, char *argv[], char **file_path);
-static void           handle_arguments(const char *binary_name, const char *file_path);
+static void parse_arguments(int argc, char *argv[], char **file_path);
+static void handle_arguments(const char *binary_name, const char *file_path);
 _Noreturn static void usage(const char *program_name, int exit_code, const char *message);
-static void           send_word(int sockfd, const char *word, uint8_t length);
+static void send_word(int sockfd, const char *word, uint8_t length);
 _Noreturn static void error_exit(const char *msg);
-static int            connect_to_server(const char *path);
-static int            socket_create(void);
-static void           setup_socket_address(struct sockaddr_un *addr, const char *path);
-static void           socket_close(int sockfd);
+static int connect_to_server(const char *path);
+static int socket_create(void);
+static void setup_socket_address(struct sockaddr_un *addr, const char *path);
+static void socket_close(int sockfd);
 
 #define SOCKET_PATH "/tmp/example_socket"
 #define UNKNOWN_OPTION_MESSAGE_LEN 24
@@ -48,17 +46,16 @@ int main(int argc, char *argv[])
 {
     char *file_path;
     FILE *file;
-    int   sockfd;
-    char  line[LINE_LEN];
+    int sockfd;
+    char line[LINE_LEN];
     char *saveptr;
-    uint8_t            size;
 
     file_path = NULL;
     parse_arguments(argc, argv, &file_path);
     handle_arguments(argv[0], file_path);
     file = fopen(file_path, "re");
 
-    if(file == NULL)
+    if (file == NULL)
     {
         perror("fopen");
         exit(EXIT_FAILURE);
@@ -66,18 +63,20 @@ int main(int argc, char *argv[])
 
     sockfd = connect_to_server(SOCKET_PATH);
 
-        while(fgets(line, sizeof(line), file) != NULL)
+    while (fgets(line, sizeof(line), file) != NULL)
     {
         const char *word;
+
         word = strtok_r(line, " \t\n", &saveptr);
 
-        while(word != NULL)
+        while (word != NULL)
         {
-            size_t  word_len;
+            uint8_t size;
+            size_t word_len;
 
             word_len = strlen(word);
 
-            if(word_len > UINT8_MAX)
+            if (word_len > UINT8_MAX)
             {
                 fprintf(stderr, "Word exceeds maximum length\n");
                 fclose(file);
@@ -85,24 +84,17 @@ int main(int argc, char *argv[])
                 exit(EXIT_FAILURE);
             }
 
-            // Write the size of the word as uint8_t
             size = (uint8_t)word_len;
-            send(sockfd, &size, sizeof(uint8_t), 0);
-
-            // Write the word
-            write(sockfd, word, word_len);
+            send_word(sockfd, word, size);
             word = strtok_r(NULL, " \t\n", &saveptr);
         }
     }
 
     fclose(file);
-    shutdown(sockfd, SHUT_WR); // Shutdown the write.
-    read_stats(sockfd);
-
     socket_close(sockfd);
+
     return EXIT_SUCCESS;
 }
-
 
 static void parse_arguments(int argc, char *argv[], char **file_path)
 {
@@ -110,34 +102,34 @@ static void parse_arguments(int argc, char *argv[], char **file_path)
 
     opterr = 0;
 
-    while((opt = getopt(argc, argv, "h")) != -1)
+    while ((opt = getopt(argc, argv, "h")) != -1)
     {
-        switch(opt)
+        switch (opt)
         {
-            case 'h':
-            {
-                usage(argv[0], EXIT_SUCCESS, NULL);
-            }
-            case '?':
-            {
-                char message[UNKNOWN_OPTION_MESSAGE_LEN];
+        case 'h':
+        {
+            usage(argv[0], EXIT_SUCCESS, NULL);
+        }
+        case '?':
+        {
+            char message[UNKNOWN_OPTION_MESSAGE_LEN];
 
-                snprintf(message, sizeof(message), "Unknown option '-%c'.", optopt);
-                usage(argv[0], EXIT_FAILURE, message);
-            }
-            default:
-            {
-                usage(argv[0], EXIT_FAILURE, NULL);
-            }
+            snprintf(message, sizeof(message), "Unknown option '-%c'.", optopt);
+            usage(argv[0], EXIT_FAILURE, message);
+        }
+        default:
+        {
+            usage(argv[0], EXIT_FAILURE, NULL);
+        }
         }
     }
 
-    if(optind >= argc)
+    if (optind >= argc)
     {
         usage(argv[0], EXIT_FAILURE, "The file path is required");
     }
 
-    if(optind < argc - 1)
+    if (optind < argc - 1)
     {
         usage(argv[0], EXIT_FAILURE, "Too many arguments.");
     }
@@ -147,7 +139,7 @@ static void parse_arguments(int argc, char *argv[], char **file_path)
 
 static void handle_arguments(const char *binary_name, const char *file_path)
 {
-    if(file_path == NULL)
+    if (file_path == NULL)
     {
         usage(binary_name, EXIT_FAILURE, "The file path is required.");
     }
@@ -155,7 +147,7 @@ static void handle_arguments(const char *binary_name, const char *file_path)
 
 _Noreturn static void usage(const char *program_name, int exit_code, const char *message)
 {
-    if(message)
+    if (message)
     {
         fprintf(stderr, "%s\n", message);
     }
@@ -168,29 +160,29 @@ _Noreturn static void usage(const char *program_name, int exit_code, const char 
 
 static void send_word(int sockfd, const char *word, uint8_t length)
 {
-    ssize_t         written_bytes;
+    ssize_t written_bytes;
     struct timespec delay;
 
     printf("Client: sending word of length %u: %s\n", length, word);
     written_bytes = send(sockfd, &length, sizeof(uint8_t), 0);
 
-    if(written_bytes < 0)
+    if (written_bytes < 0)
     {
         error_exit("Error writing word length to socket");
     }
 
-    if(length > 0)
+    if (length > 0)
     {
         written_bytes = send(sockfd, word, length, 0);
 
-        if(written_bytes < 0)
+        if (written_bytes < 0)
         {
             error_exit("Error writing word to socket");
         }
     }
 
     // Add random delay between 500ms and 1500ms
-    delay.tv_sec  = 0;
+    delay.tv_sec = 0;
     delay.tv_nsec = MIN_DELAY_MILLISECONDS * MILLISECONDS_IN_NANOSECONDS + (rand() % MAX_ADDITIONAL_NANOSECONDS);
     nanosleep(&delay, NULL);
 }
@@ -203,13 +195,13 @@ _Noreturn static void error_exit(const char *msg)
 
 static int connect_to_server(const char *path)
 {
-    int                sockfd;
+    int sockfd;
     struct sockaddr_un addr;
 
     sockfd = socket_create();
     setup_socket_address(&addr, path);
 
-    if(connect(sockfd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
+    if (connect(sockfd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
     {
         perror("Connection failed");
         close(sockfd);
@@ -228,10 +220,10 @@ static int socket_create(void)
 #ifdef SOCK_CLOEXEC
     sockfd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
 #else
-    sockfd = socket(AF_UNIX, SOCK_STREAM, 0);    // NOLINT(android-cloexec-socket)
+    sockfd = socket(AF_UNIX, SOCK_STREAM, 0); // NOLINT(android-cloexec-socket)
 #endif
 
-    if(sockfd == -1)
+    if (sockfd == -1)
     {
         perror("Socket creation failed");
         exit(EXIT_FAILURE);
@@ -250,7 +242,7 @@ static void setup_socket_address(struct sockaddr_un *addr, const char *path)
 
 static void socket_close(int sockfd)
 {
-    if(close(sockfd) == -1)
+    if (close(sockfd) == -1)
     {
         perror("Error closing socket");
         exit(EXIT_FAILURE);
