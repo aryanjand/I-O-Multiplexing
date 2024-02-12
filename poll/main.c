@@ -203,9 +203,9 @@ static void handle_new_connection(int sockfd, ClientData **client_sockets, nfds_
     if ((*fds)[0].revents & POLLIN)
     {
         socklen_t addrlen;
-        int new_socket;
         ClientData *temp;
         TextStatistics *stats_temp;
+        int new_socket;
         struct sockaddr_un addr;
 
         addrlen = sizeof(addr);
@@ -247,12 +247,9 @@ static void handle_new_connection(int sockfd, ClientData **client_sockets, nfds_
             free(*client_sockets);
             exit(EXIT_FAILURE);
         }
-        else
-        {
-            *fds = new_fds;
-            (*fds)[*max_clients].fd = new_socket;
-            (*fds)[*max_clients].events = POLLIN;
-        }
+        *fds = new_fds;
+        (*fds)[*max_clients].fd = new_socket;
+        (*fds)[*max_clients].events = POLLIN;
     }
 }
 
@@ -299,6 +296,12 @@ static void handle_client_disconnection(ClientData **client_sockets, nfds_t *max
 {
     int disconnected_socket = (*client_sockets)[client_index].socket_fd;
     close(disconnected_socket);
+
+    if ((*client_sockets)[client_index].stats != NULL)
+    {
+        free((*client_sockets)[client_index].stats);
+        (*client_sockets)[client_index].stats = NULL;
+    }
 
     for (nfds_t i = client_index; i < *max_clients - 1; i++)
     {
