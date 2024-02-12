@@ -299,30 +299,12 @@ static void handle_client_data(struct pollfd *fds, ClientData *client_sockets, n
 
 static void handle_client_disconnection(ClientData **client_sockets, nfds_t *max_clients, struct pollfd **fds, nfds_t client_index)
 {
-    ssize_t written_bytes;
     size_t stats_len = sizeof(TextStatistics);
-
-    if ((written_bytes = write_fully((*client_sockets)[client_index].socket_fd, &stats_len, sizeof(stats_len))) <= 0)
-    {
-        perror("Failed to write stats length");
-        free((*client_sockets)[client_index].stats);
-        close((*client_sockets)[client_index].socket_fd);
-        return; // should i exit ?
-    }
-
-    printf("Stats_len %zd\n", stats_len);
-
-    if ((written_bytes = write_fully((*client_sockets)[client_index].socket_fd, (*client_sockets)[client_index].stats, stats_len)) <= 0)
-    {
-        perror("Failed to write stats data");
-        free((*client_sockets)[client_index].stats);
-        close((*client_sockets)[client_index].socket_fd);
-        return; // should i exit ?
-    }
-
+    write_stats(client_sockets, client_index, stats_len);
+    print_stats((*client_sockets)[client_index].stats);
+    
     int disconnected_socket = (*client_sockets)[client_index].socket_fd;
     close(disconnected_socket);
-    print_stats((*client_sockets)[client_index].stats);
 
     if ((*client_sockets)[client_index].stats != NULL)
     {

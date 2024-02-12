@@ -109,6 +109,28 @@ static void read_stats(int sockfd) // [-Wunused-function]
     free(stats);
 }
 
+static void write_stats(ClientData **client_sockets, int client_index, size_t stats_len)
+{
+    ssize_t written_bytes;
+    if ((written_bytes = write_fully((*client_sockets)[client_index].socket_fd, &stats_len, sizeof(stats_len))) <= 0)
+    {
+        perror("Failed to write stats length");
+        free((*client_sockets)[client_index].stats);
+        close((*client_sockets)[client_index].socket_fd);
+        return; // should i exit ?
+    }
+
+    printf("Stats_len %zd\n", stats_len);
+
+    if ((written_bytes = write_fully((*client_sockets)[client_index].socket_fd, (*client_sockets)[client_index].stats, stats_len)) <= 0)
+    {
+        perror("Failed to write stats data");
+        free((*client_sockets)[client_index].stats);
+        close((*client_sockets)[client_index].socket_fd);
+        return; // should i exit ?
+    }
+}
+
 static void initialize_stats_zero(TextStatistics *stats) // [-Wunused-function]
 {
     stats->word_count = 0;
