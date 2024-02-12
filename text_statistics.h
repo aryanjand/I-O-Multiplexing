@@ -61,7 +61,7 @@ static void handleError(const char *errorMessage, int sockfd, TextStatistics *st
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
 
-static void update_character_frequency(const char *word, uint8_t word_size, unsigned int *frequencyArray) //[-Wunused-function]
+static void update_character_frequency(const char *word, uint8_t word_size, unsigned long long *frequencyArray) //[-Wunused-function]
 {
     if (word == NULL || frequencyArray == NULL)
     {

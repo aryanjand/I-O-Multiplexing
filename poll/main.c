@@ -235,6 +235,7 @@ static void handle_new_connection(int sockfd, ClientData **client_sockets, nfds_
             exit(EXIT_FAILURE);
         }
 
+        initialize_stats_zero(stats_temp);
         struct pollfd *new_fds;
         *client_sockets = temp;
         (*client_sockets)[(*max_clients) - 1].socket_fd = new_socket;
@@ -285,6 +286,11 @@ static void handle_client_data(struct pollfd *fds, ClientData *client_sockets, n
                 else
                 {
                     word[valread] = '\0';
+                    client_sockets[i].stats->word_count++;
+                    client_sockets[i].stats->character_count += strlen(word);
+                    update_character_frequency(word, strlen(word), client_sockets[i].stats->character_frequency);
+                    print_stats(client_sockets[i].stats);
+
                     printf("Received word from client %d: %s\n", client_sockets[i].socket_fd, word);
                 }
             }
