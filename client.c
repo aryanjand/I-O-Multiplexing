@@ -23,6 +23,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "text_statistics.h"
+
 static void parse_arguments(int argc, char *argv[], char **file_path);
 static void handle_arguments(const char *binary_name, const char *file_path);
 _Noreturn static void usage(const char *program_name, int exit_code, const char *message);
@@ -91,6 +93,9 @@ int main(int argc, char *argv[])
     }
 
     fclose(file);
+    shutdown(sockfd, SHUT_WR); // Shutdown the write.
+    read_stats(sockfd);
+
     socket_close(sockfd);
 
     return EXIT_SUCCESS;
