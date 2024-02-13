@@ -1,7 +1,9 @@
 /*
  * This code is licensed under the Attribution-NonCommercial-NoDerivatives 4.0 International license.
  *
- * Author: D'Arcy Smith (ds@programming101.dev)
+ * Authors: 
+ * D'Arcy Smith (ds@programming101.dev)
+ * Aryan Jand (aryan_jand@bcit.ca)
  *
  * You are free to:
  *   - Share: Copy and redistribute the material in any medium or format.
@@ -37,12 +39,10 @@ static void convert_address(const char *address, struct sockaddr_storage *addr);
 static int socket_create(int domain, int type, int protocol);
 static void socket_connect(int sockfd, struct sockaddr_storage *addr, in_port_t port);
 static void socket_close(int sockfd);
-
 // poll
 static void send_word(int sockfd, const char *word, uint8_t length);
 _Noreturn static void error_exit(const char *msg);
-static int connect_to_server(const char *path);
-static void setup_socket_address(struct sockaddr_un *addr, const char *path);
+
 
 #define UNKNOWN_OPTION_MESSAGE_LEN 24
 #define BASE_TEN 10
@@ -59,8 +59,6 @@ int main(int argc, char *argv[])
     in_port_t port;
     int sockfd;
     struct sockaddr_storage addr;
-    char ch;
-    ssize_t nread;
     char *file_path;
     FILE *file;
     char line[LINE_LEN];
@@ -314,7 +312,6 @@ static void socket_close(int client_fd)
 static void send_word(int sockfd, const char *word, uint8_t length)
 {
     ssize_t written_bytes;
-    struct timespec delay;
 
     printf("Client: sending word of length %u: %s\n", length, word);
     written_bytes = send(sockfd, &length, sizeof(uint8_t), 0);
@@ -334,42 +331,10 @@ static void send_word(int sockfd, const char *word, uint8_t length)
         }
     }
 
-    // Add random delay between 500ms and 1500ms
-    delay.tv_sec = 0;
-    delay.tv_nsec = MIN_DELAY_MILLISECONDS * MILLISECONDS_IN_NANOSECONDS + (rand() % MAX_ADDITIONAL_NANOSECONDS);
-    nanosleep(&delay, NULL);
 }
 
 _Noreturn static void error_exit(const char *msg)
 {
     perror(msg);
     exit(EXIT_FAILURE);
-}
-
-// static int connect_to_server(const char *path)
-// {
-//     int sockfd;
-//     struct sockaddr_un addr;
-
-//     sockfd = socket_create();
-//     setup_socket_address(&addr, path);
-
-//     if (connect(sockfd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
-//     {
-//         perror("Connection failed");
-//         close(sockfd);
-//         exit(EXIT_FAILURE);
-//     }
-
-//     printf("Connected to %s\n", path);
-
-//     return sockfd;
-// }
-
-static void setup_socket_address(struct sockaddr_un *addr, const char *path)
-{
-    memset(addr, 0, sizeof(*addr));
-    addr->sun_family = AF_UNIX;
-    strncpy(addr->sun_path, path, sizeof(addr->sun_path) - 1);
-    addr->sun_path[sizeof(addr->sun_path) - 1] = '\0';
 }

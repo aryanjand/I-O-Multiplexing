@@ -1,7 +1,9 @@
 /*
  * This code is licensed under the Attribution-NonCommercial-NoDerivatives 4.0 International license.
  *
- * Author: D'Arcy Smith (ds@programming101.dev)
+ * Authors:
+ * D'Arcy Smith (ds@programming101.dev)
+ * Aryan Jand (aryan_jand@bcit.ca)
  *
  * You are free to:
  *   - Share: Copy and redistribute the material in any medium or format.
@@ -44,7 +46,6 @@ static int socket_create(int domain, int type, int protocol);
 static void socket_bind(int sockfd, struct sockaddr_storage *addr, in_port_t port);
 static void start_listening(int server_fd, int backlog);
 static void socket_close(int sockfd);
-
 // Polling
 static struct pollfd *initialize_pollfds(int sockfd, ClientData **client_sockets);
 static void handle_new_connection(int sockfd, ClientData **client_sockets, nfds_t *max_clients, struct pollfd **fds, struct sockaddr_storage *client_addr, socklen_t *client_addr_len);
